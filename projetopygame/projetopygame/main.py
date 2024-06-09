@@ -18,7 +18,7 @@ fonte30 = pygame.font.SysFont('constantia', 30)
 fonte40 = pygame.font.SysFont('constantia', 40)
 
 # sons
-son_explosao = pygame.mixer.Sound('img/explosion.wav')
+son_explosao = pygame.mixer.Sound('sons/explosion.wav')
 # aumentar volume
 son_explosao.set_volume(1)
 
@@ -58,9 +58,9 @@ tiles = math.ceil(altura / bg_altura) + 1  # Calcula o número de vezes que a im
 rolagem = 0  # Inicializa a variável de rolagem do fundo
 
 planeta = pygame.image.load('img/planeta.png')
-planeta = pygame.transform.scale(planeta, (500, 500))  # Redimensiona o planeta conforme necessário
+planeta = pygame.transform.scale(planeta, (700, 500))  # Redimensiona o planeta conforme necessário
 planeta_x = largura // 2 - planeta.get_width() // 2  # Centraliza o planeta horizontalmente
-planeta_y = altura - planeta.get_height() // 2  # Centraliza o planeta verticalmente
+planeta_y = altura - planeta.get_height() //3  # Centraliza o planeta verticalmente
 planeta_velocidade = 0.01 
 
 
