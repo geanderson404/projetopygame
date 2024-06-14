@@ -1,4 +1,3 @@
-
 import pygame
 from pygame.locals import *
 from pygame import mixer
@@ -10,15 +9,22 @@ pygame.mixer.init()
 relogio = pygame.time.Clock()
 largura = 600
 altura = 700
-
+pontos = 0
+velocidade_jogo = 10
+'''def exibe_mensagem(msg,tamanho,cor):
+    fonte = pygame.font.SysFont('comicsanssms',tamanho,True,False)
+    mensagem = f'{msg}'
+    texto_formatado = fonte.render(mensagem,True,cor)
+    return texto_formatado'''
 
 # definir fontes:
 fonte15 = pygame.font.SysFont('constantia', 15)
 fonte30 = pygame.font.SysFont('constantia', 30)
 fonte40 = pygame.font.SysFont('constantia', 40)
+fonte_pontuacao = pygame.font.SysFont('Showcard Gothic',20)
 
 # sons
-son_explosao = pygame.mixer.Sound('img/explosion.wav')
+son_explosao = pygame.mixer.Sound('sons/explosion.wav')
 # aumentar volume
 son_explosao.set_volume(1)
 
@@ -57,11 +63,10 @@ bg_altura = bg.get_height()  # Obtém a altura da imagem de fundo
 tiles = math.ceil(altura / bg_altura) + 1  # Calcula o número de vezes que a imagem de fundo cabe na tela verticalmente
 rolagem = 0  # Inicializa a variável de rolagem do fundo
 
-planeta = pygame.image.load('img/planeta.png')
-planeta = pygame.transform.scale(planeta, (500, 500))  # Redimensiona o planeta conforme necessário
-planeta_x = largura // 2 - planeta.get_width() // 2  # Centraliza o planeta horizontalmente
-planeta_y = altura - planeta.get_height() // 2  # Centraliza o planeta verticalmente
-planeta_velocidade = 0.01 
+'''planeta = pygame.image.load('img/planeta.png')
+planeta = pygame.transform.scale(planeta, (700, 500))  # Redimensiona o planeta conforme necessário
+
+planeta_velocidade = 0.01 '''
 
 
 # classes
@@ -70,17 +75,17 @@ class Nave(pygame.sprite.Sprite):  # Define a classe Nave, que herda da classe p
         pygame.sprite.Sprite.__init__(self)  # Inicializa a classe pai (Sprite)
         
         self.image = pygame.image.load('img/principal.png').convert_alpha()  # Carrega a imagem da nave com transparência
-        self.image = pygame.transform.scale(self.image, (60, 60))  # Redimensiona a imagem da nave
+        self.image = pygame.transform.scale(self.image, (50, 50))  # Redimensiona a imagem da nave
         self.rect = self.image.get_rect()  # Obtém o retângulo da imagem da nave
-        
-        self.rect.center = [x, y]  # Define a posição inicial da nave
-        
+        self.rect.centerx = x 
+        self.rect.centery = y # Define a posição inicial da nave
+        self.mask = pygame.mask.from_surface(self.image)
         self.saude_incial = saude  # Define a saúde inicial da nave
         self.saude_restante = saude  # Define a saúde restante da nave
         self.ultimo_tiro = pygame.time.get_ticks()  # Guarda o tempo do último disparo da nave
-
+        
     def update(self):  # Método para atualizar a nave
-        velocidade = 8  # Define a velocidade de movimento da nave
+        velocidade = 10  # Define a velocidade de movimento da nave
         game_over = 0  # Inicializa a variável de controle do estado do jogo
         cooldown = 500  # Define o tempo de cooldown para os tiros da nave
         key = pygame.key.get_pressed()  # Obtém as teclas pressionadas
@@ -106,22 +111,40 @@ class Nave(pygame.sprite.Sprite):  # Define a classe Nave, que herda da classe p
 
         self.mask = pygame.mask.from_surface(self.image)  # Define a máscara de colisão da nave
 
+        if pygame.sprite.spritecollide(self,planeta_grupo,False,pygame.sprite.collide_mask):
+            if key[pygame.K_s]:
+                 self.rect.y -= velocidade #nao pode ir para baixo
+            
+
+
+
         # Verifica se a nave foi destruída
         if self.saude_restante <= 0:
             explosao = Explosoes(self.rect.centerx, self.rect.centery, 1)  # Cria uma explosão
             explosao_grupo.add(explosao)  # Adiciona a explosão ao grupo de explosões
             self.kill()  # Remove a nave
             game_over = -1  # Define que o jogo acabou
+         
+
+
+        if pygame.sprite.spritecollide(self,planeta_grupo,False,pygame.sprite.collide_mask):
+            self.rect.center = [self.rect.centerx, self.rect.centery]
+        
+        
+        
 
         # Verifica colisão com inimigos
         if pygame.sprite.spritecollide(self, navesviloes_grupo, False, pygame.sprite.collide_mask):
             explosao = Explosoes(self.rect.centerx, self.rect.centery, 1)  # Cria uma explosão
             explosao_grupo.add(explosao)  # Adiciona a explosão ao grupo de explosões
             self.kill()  # Remove a nave
+            nave.kill()
             game_over = -1  # Define que o jogo acabou
 
         return game_over  # Retorna o estado do jogo
 
+        
+     
     def desenho_barrasaude(self):  # Método para desenhar a barra de saúde da nave na tela
         # Desenha a barra de saúde
         pygame.draw.rect(display, vermelho, (10, altura - 50, 100, 15))  # Desenha o fundo vermelho da barra de saúde
@@ -129,11 +152,58 @@ class Nave(pygame.sprite.Sprite):  # Define a classe Nave, que herda da classe p
             # Desenha a barra de saúde verde proporcional à saúde restante
             pygame.draw.rect(display, verde, (10, altura - 50, int(100 * (self.saude_restante / self.saude_incial)), 15))
         # Desenha o texto "SAÚDE"
-        draw_texto('SAÚDE', fonte15, branco, 5, altura - 30)
+        draw_texto('SAÚDE  NAVE', fonte15, branco, 5, altura - 30)
+
+
+class Planeta(pygame.sprite.Sprite):  # Define a classe Balas, que herda da classe pygame.sprite.Sprite
+    def __init__(self,saude):  # Método de inicialização da classe, recebe coordenadas x e y
+        pygame.sprite.Sprite.__init__(self)  # Inicializa a classe pai (Sprite)
+        self.image = pygame.image.load('img/planeta.png')  # Carrega a imagem da bala
+        self.image = pygame.transform.scale(self.image, (600, 300 )) 
+        #self.image = pygame.transform.scale(self.image, (700, 300))
+        self.rect = self.image.get_rect()  # Obtém o retângulo da imagem da bala
+        self.rect.x = largura // 2 - self.rect.width // 2 # Centraliza horizontalmente
+        self.rect.y = altura - self.rect.height // 3 # Define a posição inicial da bala
+        self.planeta_velocidade = 0.01 
+        self.mask = pygame.mask.from_surface(self.image)
+        self.saude_planetainicial = saude
+        self.saude_planetrestante = saude
+        
+    def update(self):
+        global pontos
+        global game_over
+        if pygame.sprite.spritecollide(self,navesviloes_grupo,True,pygame.sprite.collide_mask):
+            
+            self.saude_planetrestante -= 1
+        if self.saude_planetrestante<= 0:
+            game_over = - 1  # Define que o jogo acabou
+      
+         
+
+        
+            
+        pygame.draw.rect(display, vermelho, (self.rect.x + 20, (self.rect.top - 570 ), (self.rect.width - 100)//4,  15))
+        if self.saude_planetrestante > 0:  # Verifica se a saúde
+             pygame.draw.rect(display, verde, (self.rect.x + 20, (self.rect.top - 570 ), int((self.rect.width - 100)//4*(self.saude_planetrestante/self.saude_planetainicial)),  15))
+        draw_texto('SAÚDE PLANETA', fonte15, branco, 5, altura - 650)
+            
+
+        return game_over
+            
+        
+
+         
+        
+
+    
+
+        
+        
+
 
 
 class Balas(pygame.sprite.Sprite):  # Define a classe Balas, que herda da classe pygame.sprite.Sprite
-    def __init__(self, x, y):  # Método de inicialização da classe, recebe coordenadas x e y
+    def __init__(self,x,y):  # Método de inicialização da classe, recebe coordenadas x e y
         pygame.sprite.Sprite.__init__(self)  # Inicializa a classe pai (Sprite)
         self.image = pygame.image.load('img/bullet.png')  # Carrega a imagem da bala
         self.rect = self.image.get_rect()  # Obtém o retângulo da imagem da bala
@@ -148,6 +218,9 @@ class Balas(pygame.sprite.Sprite):  # Define a classe Balas, que herda da classe
             son_explosao.play()  # Toca o som de explosão
             explosao = Explosoes(self.rect.centerx, self.rect.centery, 2)  # Cria uma explosão
             explosao_grupo.add(explosao)  # Adiciona a explosão ao grupo de explosões
+            global pontos
+            pontos += 1  # Incrementa a pontuação
+         
 
 
 
@@ -156,14 +229,22 @@ class Navesviloes(pygame.sprite.Sprite):  # Define a classe Navesviloes, que her
         pygame.sprite.Sprite.__init__(self)  # Inicializa a classe pai (Sprite)
         # Carrega uma imagem aleatória do vilão e atribui à variável image
         self.image = pygame.image.load('img/vilao' + str(random.randint(1, 5)) + '.png')
+        self.image = pygame.transform.scale(self.image, (50, 50)) 
         self.rect = self.image.get_rect()  # Obtém o retângulo da imagem do vilão
         self.rect.center = [x, y]  # Define a posição inicial do vilão
         self.mask = pygame.mask.from_surface(self.image)  # Define a máscara de colisão do vilão
-
+       
+        
+    
+    
+    
     def update(self):  # Método para atualizar o vilão
         self.rect.y += 2  # Move o vilão para baixo
         if self.rect.top > altura:  # Verifica se o vilão saiu da tela
             self.kill()  # Remove o vilão do jogo
+        
+      
+  
 
 
 class Naves_viloes_balas(pygame.sprite.Sprite):  # Define a classe Naves_viloes_balas, que herda da classe pygame.sprite.Sprite
@@ -172,7 +253,7 @@ class Naves_viloes_balas(pygame.sprite.Sprite):  # Define a classe Naves_viloes_
         self.image = pygame.image.load('img/alien_bullet.png')  # Carrega a imagem do projétil do inimigo
         self.rect = self.image.get_rect()  # Obtém o retângulo da imagem do projétil
         self.rect.center = [x, y]  # Define a posição inicial do projétil
-
+       
     def update(self):  # Método para atualizar o projétil do inimigo
         self.rect.y += 5  # Move o projétil para baixo
         if self.rect.top > altura:  # Verifica se o projétil saiu da tela
@@ -183,8 +264,7 @@ class Naves_viloes_balas(pygame.sprite.Sprite):  # Define a classe Naves_viloes_
             nave.saude_restante -= 1  # Reduz a saúde da nave do jogador
             explosao = Explosoes(self.rect.centerx, self.rect.centery, 1)  # Cria uma explosão
             explosao_grupo.add(explosao)  # Adiciona a explosão ao grupo de explosões
-
-
+        
 
 class Explosoes(pygame.sprite.Sprite):  # Define a classe Explosoes, que herda da classe pygame.sprite.Sprite
     def __init__(self, x, y, tamanho):  # Método de inicialização da classe, recebe coordenadas x e y, e tamanho da explosão
@@ -225,6 +305,10 @@ balas_grupo = pygame.sprite.Group()  # Grupo para as balas do jogador
 navesviloes_grupo = pygame.sprite.Group()  # Grupo para os vilões
 viloes_balas_grupo = pygame.sprite.Group()  # Grupo para as balas dos vilões
 explosao_grupo = pygame.sprite.Group()  # Grupo para as explosões
+planeta = Planeta(5) #5 aliens podem entrar
+planeta_grupo = pygame.sprite.Group()
+planeta_grupo.add(planeta)
+
 
 # Cria a nave do jogador e a adiciona ao grupo da nave
 nave = Nave(int(largura / 2), altura - 100, 3)  # Cria uma instância da classe Nave
@@ -238,11 +322,9 @@ while run:  # Loop principal do jogo
     for i in range(0, tiles):
         display.blit(bg, (0, i * bg_altura + rolagem))
     
-    planeta_y -= planeta_velocidade  # Incrementa a posição vertical do planeta pela velocidade do planeta
-    if planeta_y > altura:  # Se o planeta sair da tela, ele é reposicionado no topo
-        planeta_y = -planeta.get_height()
+    
 
-    display.blit(planeta, (planeta_x, planeta_y))  # Desenha a imagem do planeta na tela
+
 
     # Rola o fundo para cima
     rolagem -= 5
@@ -279,8 +361,9 @@ while run:  # Loop principal do jogo
             balas_grupo.update()  # Atualiza as balas do jogador
             navesviloes_grupo.update()  # Atualiza os vilões
             viloes_balas_grupo.update()  # Atualiza os tiros dos vilões
+            planeta_grupo.update()
         else:
-            if game_over == - 1:  # Se o jogador perdeu
+            if game_over == - 1 :  # Se o jogador perdeu
                 draw_texto('GAME OVER!', fonte40, branco, int(largura / 2 - 100), int(altura / 2 + 50))  # Exibe a mensagem de "GAME OVER!"
             if game_over == 1:  # Se o jogador ganhou
                 draw_texto('VOCÊ SALVOU A TERRA!', fonte40, branco, int(largura / 2 - 110), int(altura / 2 + 50))  # Exibe a mensagem de vitória
@@ -298,23 +381,31 @@ while run:  # Loop principal do jogo
 
     # Atualiza o grupo de explosões
     explosao_grupo.update()
-
+    
     # Desenha as sprites na tela
     nave_grupo.draw(display)  # Desenha a nave do jogador
     balas_grupo.draw(display)  # Desenha as balas do jogador
     navesviloes_grupo.draw(display)  # Desenha os vilões
     viloes_balas_grupo.draw(display)  # Desenha as balas do vilao
+    planeta_grupo.draw(display)
+   
 
     explosao_grupo.draw(display)
 
     # desenha barra de saúde
     nave.desenho_barrasaude()
+    
+    pontos_texto = fonte_pontuacao.render(f'Pontos: {pontos}', True, (255, 255, 255))
+    text_rect = pontos_texto.get_rect(center=(largura // 2, altura //16 ))  # Centraliza o texto na tela
+    display.blit(pontos_texto, text_rect)
+    
+   
 
     # eventos do pygame
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
-
+    
     pygame.display.update()
 #fecha o pygame
 pygame.quit()
